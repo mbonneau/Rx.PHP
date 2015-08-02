@@ -214,21 +214,10 @@ abstract class BaseObservable implements ObservableInterface
         });
     }
 
-    public static function fromArray(array $array)
+    public static function fromArray(array $array, $scheduler = null)
     {
-        $max   = count($array);
-        return new AnonymousObservable(function ($observer, $scheduler) use ($array, $max) {
-            $count = 0;
-
-            return $scheduler->scheduleRecursive(function($reschedule) use (&$count, $array, $max, $observer) {
-                if ($count < $max) {
-                    $observer->onNext($array[$count]);
-                    $count++;
-                    $reschedule();
-                } else {
-                    $observer->onCompleted();
-                }
-            });
+        return new AnonymousObservable(function ($observer, $scheduler) use ($array) {
+            return (new ArrayObservable($array))->subscribe($observer, $scheduler);
         });
     }
 
