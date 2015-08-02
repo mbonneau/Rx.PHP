@@ -30,7 +30,7 @@ class ArrayObservable extends BaseObservable
                     $observer->onNext($value);
                 }
 
-                if ($count > 1) {
+                if ($count > 0) {
                     $reschedule();
 
                     return;
