@@ -158,7 +158,7 @@ abstract class BaseObservable implements ObservableInterface
     /**
      * Merges an observable sequence of observables into an observable sequence.
      *
-     * @param ObservableInterface $observables
+     * @param ObservableInterface $sources
      *
      * @return ObserverInterface
      */
@@ -214,11 +214,22 @@ abstract class BaseObservable implements ObservableInterface
         });
     }
 
-    public static function fromArray(array $array)
+    public static function fromArray(array $array, $schedulerFromArray = null)
     {
         $max   = count($array);
-        return new AnonymousObservable(function ($observer, $scheduler) use ($array, $max) {
+        return new AnonymousObservable(function ($observer, $schedulerFromSubscribe) use ($array, $max, $schedulerFromArray) {
             $count = 0;
+
+            // give scheduler preference to the subscribe scheduler, then the
+            // scheduler passed in on the fromArray call
+            // then just make a new one if there were none passed in to either
+            if ($schedulerFromSubscribe !== null) {
+                $scheduler = $schedulerFromSubscribe;
+            } else if ($schedulerFromArray !== null) {
+                $scheduler = $schedulerFromArray;
+            } else {
+                $scheduler = new ImmediateScheduler();
+            }
 
             return $scheduler->scheduleRecursive(function($reschedule) use (&$count, $array, $max, $observer) {
                 if ($count < $max) {
