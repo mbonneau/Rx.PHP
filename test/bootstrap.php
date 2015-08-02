@@ -9,7 +9,8 @@
  * file that was distributed with this source code.
  */
 
-if (file_exists($file = __DIR__.'/../vendor/autoload.php')) {
+if (file_exists($file = __DIR__.'/../vendor/autoload.php') ||
+    file_exists($file = __DIR__.'/../../../../vendor/autoload.php')) {
     $loader = require_once $file;
     $loader->add('Rx', __DIR__);
     require_once __DIR__ . '/helper-functions.php';
