@@ -4,12 +4,14 @@ namespace Rx\Observable;
 
 use Exception;
 use InvalidArgumentException;
+use Rx\DisposableInterface;
 use Rx\ObserverInterface;
 use Rx\ObservableInterface;
 use Rx\Observer\CallbackObserver;
 use Rx\Scheduler\ImmediateScheduler;
 use Rx\Disposable\CompositeDisposable;
 use Rx\Disposable\SingleAssignmentDisposable;
+use Rx\SchedulerInterface;
 use Rx\Subject\Subject;
 use Rx\Disposable\RefCountDisposable;
 use Rx\Disposable\EmptyDisposable;
@@ -21,7 +23,15 @@ abstract class BaseObservable implements ObservableInterface
     protected $started = false;
     private $disposable = null;
 
-    public function subscribe(ObserverInterface $observer, $scheduler = null)
+    /**
+     * Override this to do your own subscription stuff
+     * it will fixup your subscribe call if you use callbacks or an ObserverInterface
+     *
+     * @param ObserverInterface $observer
+     * @param null $scheduler
+     * @return CallbackDisposable
+     */
+    protected function finishSubscribe(ObserverInterface $observer, $scheduler = null)
     {
         $this->observers[] = $observer;
 
@@ -34,6 +44,46 @@ abstract class BaseObservable implements ObservableInterface
         return new CallbackDisposable(function() use ($observer, $observable) {
             $observable->removeObserver($observer);
         });
+    }
+
+    /**
+     * @inheritdoc
+     */
+    function subscribe($observerOrOnNext = null, $schedulerOrOnError = null, $onCompleted = null, $schedulerIfUsingCallbacks = null)
+    {
+        list($observer, $scheduler) = self::getObserverAndSchedulerForSubscribe($observerOrOnNext, $schedulerOrOnError, $onCompleted, $schedulerIfUsingCallbacks);
+
+        return $this->finishSubscribe($observer, $scheduler);
+    }
+
+    public static function getObserverAndSchedulerForSubscribe($observerOrOnNext, $schedulerOrOnError = null, $onCompleted = null, $schedulerIfUsingCallbacks = null) {
+        if ($observerOrOnNext instanceof ObserverInterface) {
+            if ($onCompleted !== null || $schedulerIfUsingCallbacks !== null) {
+                throw new InvalidArgumentException("Cannot pass onCompleted or schedulerIfUsingCallbacks parameters if using an ObservableInterface to subscribe.");
+            }
+            if ($schedulerOrOnError !== null && !($schedulerOrOnError instanceof SchedulerInterface)) {
+                throw new InvalidArgumentException("Second argument to subscribe must be null or ScheduleInterface");
+            }
+
+            return [$observerOrOnNext, $schedulerOrOnError];
+        }
+
+        if ($observerOrOnNext === null || is_callable($observerOrOnNext)) {
+            if ($schedulerOrOnError !== null && !is_callable($schedulerOrOnError)) {
+                throw new InvalidArgumentException("Second argument to subscribe must be callable if first is not an ObserverInterface");
+            }
+            if ($onCompleted !== null && !is_callable($onCompleted)) {
+                throw new InvalidArgumentException("Third argument to subscribe must be callable");
+            }
+            if ($schedulerIfUsingCallbacks && !($schedulerIfUsingCallbacks instanceof SchedulerInterface)) {
+                throw new InvalidArgumentException("Invalid argument for scheduler");
+            }
+
+            $observer = new CallbackObserver($observerOrOnNext, $schedulerOrOnError, $onCompleted);
+            return [$observer, $schedulerIfUsingCallbacks];
+        }
+
+        throw new InvalidArgumentException("First argument must be callable or ObserverInterface");
     }
 
     /**
@@ -52,11 +102,12 @@ abstract class BaseObservable implements ObservableInterface
         return true;
     }
 
+    /**
+     * @deprecated
+     */
     public function subscribeCallback($onNext = null, $onError = null, $onCompleted = null, $scheduler = null)
     {
-        $observer = new CallbackObserver($onNext, $onError, $onCompleted);
-
-        return $this->subscribe($observer, $scheduler);
+        return $this->subscribe($onNext, $onError, $onCompleted, $scheduler);
     }
 
     private function start($scheduler = null)

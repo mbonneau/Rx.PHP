@@ -39,7 +39,10 @@ class HotObservable extends BaseObservable
         }
     }
 
-    public function subscribe(ObserverInterface $observer)
+    /**
+     * @inheritDoc
+     */
+    protected function finishSubscribe(ObserverInterface $observer, $scheduler = null)
     {
         $currentObservable = $this;
 

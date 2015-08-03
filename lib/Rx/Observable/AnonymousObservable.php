@@ -20,10 +20,7 @@ class AnonymousObservable extends BaseObservable
         $this->subscribeAction = $subscribeAction;
     }
 
-    /**
-     * @override
-     */
-    public function subscribe(ObserverInterface $observer, $scheduler = null)
+    protected function finishSubscribe(ObserverInterface $observer, $scheduler = null)
     {
         $subscribeAction = $this->subscribeAction;
 

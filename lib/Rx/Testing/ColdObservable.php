@@ -20,7 +20,10 @@ class ColdObservable extends BaseObservable
         $this->messages      = $messages ;
     }
 
-    public function subscribe(ObserverInterface $observer)
+    /**
+     * @inheritDoc
+     */
+    protected function finishSubscribe(ObserverInterface $observer, $scheduler = null)
     {
         $this->subscriptions[] = new Subscription($this->scheduler->getClock());
         $index                 = count($this->subscriptions) - 1;

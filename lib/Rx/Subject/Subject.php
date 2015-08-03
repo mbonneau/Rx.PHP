@@ -16,7 +16,10 @@ class Subject extends BaseObservable implements ObserverInterface, DisposableInt
     private $isStopped  = false;
     protected $observers  = array();
 
-    public function subscribe(ObserverInterface $observer, $scheduler = null)
+    /**
+     * @inheritDoc
+     */
+    protected function finishSubscribe(ObserverInterface $observer, $scheduler = null)
     {
         $this->assertNotDisposed();
 

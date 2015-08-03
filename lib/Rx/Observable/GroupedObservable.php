@@ -37,7 +37,10 @@ class GroupedObservable extends BaseObservable
         return $this->key;
     }
 
-    public function subscribe(ObserverInterface $observer, $scheduler = null)
+    /**
+     * @inheritDoc
+     */
+    protected function finishSubscribe(ObserverInterface $observer, $scheduler = null)
     {
         return $this->underlyingObservable->subscribe($observer, $scheduler);
     }
